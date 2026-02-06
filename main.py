@@ -1,90 +1,143 @@
 import tkinter as tk
 import random
+import string
 
-# List of words
+# ------------------ GAME SETUP ------------------
 words = ["apple", "ball", "cat", "dog", "elephant"]
 
-# Choose a random word
-secret_word = random.choice(words)
+def start_new_game():
+    global secret_word, guessed_letters, chances
 
-guessed_letters = []
-chances = 6
+    secret_word = random.choice(words)
+    guessed_letters = []
+    chances = 6
 
-# Function to update displayed word
+    chances_label.config(text="❤️ Chances left: 6")
+    result_label.config(text="")
+    guessed_label.config(text="Guessed Letters: ")
+
+    for btn in buttons:
+        btn.config(state="normal", bg="#FFD966")
+
+    update_word()
+
+# ------------------ GAME LOGIC ------------------
 def update_word():
     display = ""
     for letter in secret_word:
         if letter in guessed_letters:
-            display += letter + " "
+            display += letter.upper() + " "
         else:
             display += "_ "
     word_label.config(text=display)
 
-# Function when a letter button is clicked
-def guess_letter(letter):
+def guess_letter(letter, button):
     global chances
 
     if letter not in guessed_letters:
         guessed_letters.append(letter)
+        guessed_label.config(
+            text="Guessed Letters: " + " ".join(l.upper() for l in guessed_letters)
+        )
 
         if letter not in secret_word:
             chances -= 1
-            chances_label.config(text="Chances left: " + str(chances))
+            chances_label.config(text=f"❤️ Chances left: {chances}")
+            button.config(bg="#FF6F61")  # red for wrong
+        else:
+            button.config(bg="#6BCF63")  # green for correct
 
+        button.config(state="disabled")
         update_word()
         check_game()
 
-# Function to check win or lose
 def check_game():
     if chances == 0:
-        result_label.config(text="❌ You Lost! Word was: " + secret_word)
+        result_label.config(
+            text=f"❌ You Lost! Word was: {secret_word.upper()}",
+            fg="red"
+        )
         disable_buttons()
 
-    win = True
-    for letter in secret_word:
-        if letter not in guessed_letters:
-            win = False
-
-    if win:
-        result_label.config(text="🎉 You Won!")
+    if all(letter in guessed_letters for letter in secret_word):
+        result_label.config(text="🎉 You Won!", fg="green")
         disable_buttons()
 
-# Disable all buttons after game ends
 def disable_buttons():
     for btn in buttons:
         btn.config(state="disabled")
 
-# Create main window
+# ------------------ UI SETUP ------------------
 window = tk.Tk()
-window.title("Hangman Game")
-window.geometry("400x400")
+window.title("🎯 Word Puzzle Game")
+window.geometry("520x520")
+window.config(bg="#E3F2FD")
 
-# Labels
-word_label = tk.Label(window, text="", font=("Arial", 20))
-word_label.pack(pady=20)
+title = tk.Label(
+    window, text="WORD PUZZLE GAME 🎯",
+    font=("Comic Sans MS", 20, "bold"),
+    bg="#E3F2FD", fg="#0D47A1"
+)
+title.pack(pady=10)
 
-chances_label = tk.Label(window, text="Chances left: 6", font=("Arial", 12))
+word_label = tk.Label(
+    window, text="", font=("Arial", 26, "bold"),
+    bg="#E3F2FD", fg="#1B5E20"
+)
+word_label.pack(pady=15)
+
+chances_label = tk.Label(
+    window, text="❤️ Chances left: 6",
+    font=("Arial", 14),
+    bg="#E3F2FD"
+)
 chances_label.pack()
 
-result_label = tk.Label(window, text="", font=("Arial", 14))
+guessed_label = tk.Label(
+    window, text="Guessed Letters: ",
+    font=("Arial", 12),
+    bg="#E3F2FD"
+)
+guessed_label.pack(pady=5)
+
+result_label = tk.Label(
+    window, text="", font=("Arial", 16, "bold"),
+    bg="#E3F2FD"
+)
 result_label.pack(pady=10)
 
-# Frame for letter buttons
-button_frame = tk.Frame(window)
-button_frame.pack()
+# ------------------ LETTER BUTTONS ------------------
+button_frame = tk.Frame(window, bg="#E3F2FD")
+button_frame.pack(pady=10)
 
 buttons = []
 
-# Create A-Z buttons
-for i in range(26):
-    letter = chr(97 + i)  # a to z
-    btn = tk.Button(button_frame, text=letter, width=4,
-                    command=lambda l=letter: guess_letter(l))
-    btn.grid(row=i//7, column=i%7)
+for i, letter in enumerate(string.ascii_lowercase):
+    btn = tk.Button(
+        button_frame,
+        text=letter.upper(),
+        width=4,
+        height=2,
+        font=("Arial", 10, "bold"),
+        bg="#FFD966",
+        command=lambda l=letter, b=None: None
+    )
+    btn.config(command=lambda l=letter, b=btn: guess_letter(l, b))
+    btn.grid(row=i // 7, column=i % 7, padx=3, pady=3)
     buttons.append(btn)
 
-# Start game
-update_word()
+# ------------------ RESTART BUTTON ------------------
+restart_btn = tk.Button(
+    window,
+    text="🔄 Restart Game",
+    font=("Arial", 12, "bold"),
+    bg="#4CAF50",
+    fg="white",
+    command=start_new_game
+)
+restart_btn.pack(pady=15)
 
-# Run window
+# Start first game
+start_new_game()
+
 window.mainloop()
